@@ -1,12 +1,13 @@
-from xml.dom.minidom import Identified
 import torch
 import torch.nn as nn
 
 import numpy as np
 
+
 def get_living_mask(x):
-        alpha = x[:, 3:4, :, :]
-        return nn.functional.max_pool2d(alpha, kernel_size=3, stride=1, padding=1) > 0.1
+    alpha = x[:, 3:4, :, :]
+    return nn.functional.max_pool2d(alpha, kernel_size=3, stride=1, padding=1) > 0.1
+
 
 class CAModel(nn.Module):
 
@@ -43,8 +44,8 @@ class CAModel(nn.Module):
         # sobel filter in x dimension
         dx = torch.tensor(
             [
-                [-1, 0, 1], 
-                [-2, 0, 2], 
+                [-1, 0, 1],
+                [-2, 0, 2],
                 [-1, 0, 1]
             ]
         )
@@ -91,8 +92,9 @@ class CAModel(nn.Module):
 
         return x * life_mask
 
+
 if __name__ == "__main__":
-    device = "cuda:0"
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
     model = CAModel(n_channels=16, hidden_channels=128, fire_rate=0.5, device=device)
 
     input = torch.ones((1, 16, 3, 3)).to(device)
