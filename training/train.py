@@ -43,7 +43,8 @@ def train_step(
 def train(
     model: torch.nn.Module,
     seed: torch.Tensor,
-    epochs: int
+    epochs: int,
+    device: str
 ) -> torch.nn.Module:
     """
     TODO
@@ -54,10 +55,10 @@ def train(
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer)
 
     loss_fn = torch.nn.MSELoss()
-    target_image = load_image(mod="BloodMNIST", index=0).to("cuda")
-    seed = seed.to("cuda")
+    target_image = load_image(mod="BloodMNIST", index=0).to(device)
+    seed = seed.to(device)
     for epoch in tqdm(range(epochs)):
-        
+
         x, loss = train_step(model, seed, target_image, optimizer, loss_fn)
 
         if epoch % 10 == 0:
@@ -66,8 +67,7 @@ def train(
             writer.add_image("Original", target_image, global_step=epoch)
             writer.add_image("Result", x[0, :3], global_step=epoch)
             writer.flush()
-        
-        lr_scheduler.step()
-    
-    writer.close()
 
+        lr_scheduler.step()
+
+    writer.close()
