@@ -1,4 +1,7 @@
 matplotlib
 numpy
-torch
+torch==1.10.0+cu113
 torchvision
+tensorboard==2.9.0
+tqdm
+setuptools==59.5.0

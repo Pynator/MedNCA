@@ -67,7 +67,7 @@ class CAModel(nn.Module):
 
         kernel = kernel[:, None, ...] # (1, n_channels, 3, 3)
 
-        kernel = kernel.to(device)
+        kernel = kernel.to(self.device)
 
         y = nn.functional.conv2d(x, kernel, padding=1, groups=self.n_channels)
 
