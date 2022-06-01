@@ -21,8 +21,8 @@ def load_image(mod: str, index: int, path="./images") -> torch.Tensor:
 
 def train_step(
     model: torch.nn.Module,
-    x,
-    target_image,
+    x: torch.Tensor,
+    target_image: torch.Tensor,
     optimizer: torch.optim.Optimizer,
     loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
 ) -> Tuple[torch.Tensor, int]:
@@ -32,7 +32,7 @@ def train_step(
     iter = np.random.randint(64, 96)
     for i in range(iter):
         x = model(x)
-    loss = loss_fn(x[:, :3], target_image)
+    loss = loss_fn(x[:, :4], torch.concat([target_image, torch.ones(size=(1, 28, 28)).to(device="cuda")], dim=0))
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
@@ -52,7 +52,7 @@ def train(
     writer = SummaryWriter()
 
     optimizer = torch.optim.Adam(params=model.parameters())
-    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer)
+    lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=epochs)
 
     loss_fn = torch.nn.MSELoss()
     target_image = load_image(mod="BloodMNIST", index=0).to(device)
@@ -63,10 +63,11 @@ def train(
 
         if epoch % 10 == 0:
             writer.add_scalar("Loss", loss, global_step=epoch)
-            writer.add_scalar("Learning Rate", lr_scheduler.get_lr(), global_step=epoch)
+            writer.add_scalar("Learning Rate", lr_scheduler.get_last_lr()[0], global_step=epoch)
             writer.add_image("Original", target_image, global_step=epoch)
-            writer.add_image("Result", x[0, :3], global_step=epoch)
+            writer.add_image("Result", x[0, :3].clip(min=0, max=1), global_step=epoch)
             writer.flush()
+            torch.save(model.state_dict(), join(writer.get_logdir(), "model"))
 
         lr_scheduler.step()
 

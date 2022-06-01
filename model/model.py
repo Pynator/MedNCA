@@ -26,7 +26,7 @@ class CAModel(nn.Module):
         )
 
         with torch.no_grad():
-            self.dmodel[2].weight.zero_()
+            self.dmodel[-1].weight.zero_()
 
         self.to(device)
 

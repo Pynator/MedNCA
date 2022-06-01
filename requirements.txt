@@ -1,7 +1,9 @@
 matplotlib
 numpy
-torch==1.10.0+cu113
+torch
 torchvision
-tensorboard==2.9.0
+tensorboard
 tqdm
+# Bug fix:
 setuptools==59.5.0
+protobuf<=3.20.1
