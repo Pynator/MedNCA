@@ -24,7 +24,8 @@ def train_step(
     x: torch.Tensor,
     target_image: torch.Tensor,
     optimizer: torch.optim.Optimizer,
-    loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor]
+    loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor],
+    device: str
 ) -> Tuple[torch.Tensor, int]:
     """
     TODO
@@ -32,7 +33,7 @@ def train_step(
     iter = np.random.randint(64, 96)
     for i in range(iter):
         x = model(x)
-    loss = loss_fn(x[:, :4], torch.concat([target_image, torch.ones(size=(1, 28, 28)).to(device="cuda")], dim=0))
+    loss = loss_fn(x[:, :4], torch.concat([target_image, torch.ones(size=(1, 28, 28)).to(device=device)], dim=0))
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
@@ -59,13 +60,18 @@ def train(
     seed = seed.to(device)
     for epoch in tqdm(range(epochs)):
 
-        x, loss = train_step(model, seed, target_image, optimizer, loss_fn)
+        x, loss = train_step(model, seed, target_image, optimizer, loss_fn, device)
 
         if epoch % 10 == 0:
             writer.add_scalar("Loss", loss, global_step=epoch)
             writer.add_scalar("Learning Rate", lr_scheduler.get_last_lr()[0], global_step=epoch)
             writer.add_image("Original", target_image, global_step=epoch)
             writer.add_image("Result", x[0, :3].clip(min=0, max=1), global_step=epoch)
+
+            for name, weight in model.named_parameters():
+                writer.add_histogram(name, weight, global_step=epoch)
+                writer.add_histogram(f"{name}.grad", weight.grad, global_step=epoch)
+
             writer.flush()
             torch.save(model.state_dict(), join(writer.get_logdir(), "model"))
 
