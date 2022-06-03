@@ -63,18 +63,35 @@ def train(
         x, loss = train_step(model, seed, target_image, optimizer, loss_fn, device)
 
         if epoch % 10 == 0:
-            writer.add_scalar("Loss", loss, global_step=epoch)
-            writer.add_scalar("Learning Rate", lr_scheduler.get_last_lr()[0], global_step=epoch)
-            writer.add_image("Original", target_image, global_step=epoch)
-            writer.add_image("Result", x[0, :3].clip(min=0, max=1), global_step=epoch)
-
-            for name, weight in model.named_parameters():
-                writer.add_histogram(name, weight, global_step=epoch)
-                writer.add_histogram(f"{name}.grad", weight.grad, global_step=epoch)
-
-            writer.flush()
-            torch.save(model.state_dict(), join(writer.get_logdir(), "model"))
+            log_and_save(writer, epoch, loss, lr_scheduler, target_image, x, model)
 
         lr_scheduler.step()
 
+    log_and_save(writer, epoch, loss, lr_scheduler, target_image, x, model)
+
     writer.close()
+
+
+def log_and_save(
+    writer: SummaryWriter,
+    epoch: int,
+    loss: int,
+    lr_scheduler: torch.optim.lr_scheduler._LRScheduler,
+    target_image: torch.Tensor,
+    x: torch.Tensor,
+    model: torch.nn.Module
+) -> None:
+    """
+    Handels training loop logging to tensorboard and saves the pytorch model.
+    """
+    writer.add_scalar("Loss", loss, global_step=epoch)
+    writer.add_scalar("Learning Rate", lr_scheduler.get_last_lr()[0], global_step=epoch)
+    writer.add_image("Original", target_image, global_step=epoch)
+    writer.add_image("Result", x[0, :3].clip(min=0, max=1), global_step=epoch)
+
+    for name, weight in model.named_parameters():
+        writer.add_histogram(name, weight, global_step=epoch)
+        writer.add_histogram(f"{name}.grad", weight.grad, global_step=epoch)
+
+    writer.flush()
+    torch.save(model.state_dict(), join(writer.get_logdir(), "model"))
