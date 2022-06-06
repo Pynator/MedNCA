@@ -1,7 +1,6 @@
 from model.model import CAModel
 from training.train import train
 import torch
-from torchsummary import summary
 
 
 if __name__ == "__main__":
