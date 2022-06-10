@@ -7,3 +7,6 @@ tqdm
 # Bug fix:
 setuptools==59.5.0
 protobuf<=3.20.1
+# Interactive demo
+pygame>=2
+pygame_gui
