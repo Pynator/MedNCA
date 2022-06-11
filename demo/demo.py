@@ -1,5 +1,6 @@
 import math
 import sys
+from typing import cast
 
 import numpy as np
 import pygame as pg
@@ -10,10 +11,12 @@ from model.model import CAModel
 
 class Demo:
     def __init__(self, start: bool = True) -> None:
+        torch.no_grad()
         self.load_model("demo/trained_models/model")
 
         self.n_channels = 16
-        self.n_cols, self.n_rows = 28, 28
+        self.n_cols = 28
+        self.n_rows = 28
 
         self.world = torch.zeros(1, self.n_channels, self.n_cols, self.n_rows).to(self.device)
         # TODO Do we need to disable gradients or caching?
@@ -65,6 +68,18 @@ class Demo:
             "Clear",
             self.ui_manager,
         )
+        self.fps_slider = pg_gui.elements.UIHorizontalSlider(
+            pg.Rect((self.image_width + 50, 150), (self.sidebar_width - 100, 50)),
+            30,
+            (5, 60),
+            self.ui_manager,
+            click_increment=5,
+        )
+        self.fps_label = pg_gui.elements.UILabel(
+            pg.Rect((self.image_width + 50, 110), (self.sidebar_width - 100, 40)),
+            "target fps: ...  |  current fps: ...",
+            self.ui_manager,
+        )
 
     def run(self) -> None:
         # Local variables
@@ -83,14 +98,19 @@ class Demo:
                     pg.quit()
                     sys.exit()
 
-                if event.type == pg.MOUSEBUTTONDOWN and pg.mouse.get_pressed()[0]:
+                elif event.type == pg.MOUSEBUTTONDOWN and pg.mouse.get_pressed()[0]:
                     x_pos, y_pos = pg.mouse.get_pos()
                     if self.inside_image(x_pos, y_pos):
                         self.world[:, 3:, math.floor(y_pos / cs), math.floor(x_pos / cs)] = 1
 
-                if event.type == pg_gui.UI_BUTTON_PRESSED:
+                elif event.type == pg_gui.UI_BUTTON_PRESSED:
                     if event.ui_element == self.clear_button:
                         self.world = torch.zeros(1, self.n_channels, self.n_cols, self.n_rows)
+                        frame_count = 1
+
+                elif event.type == pg_gui.UI_HORIZONTAL_SLIDER_MOVED:
+                    if event.ui_element == self.fps_slider:
+                        self.fps = cast(int, self.fps_slider.get_current_value())
 
                 self.ui_manager.process_events(event)
 
@@ -105,18 +125,19 @@ class Demo:
             # Update world
             self.world = self.model(self.world)
             colors = np.transpose(
-                self.world[0, :3].detach().numpy().clip(0, 1) * 255, (1, 2, 0)
+                self.world[0, :4].detach().numpy().clip(0, 1) * 255, (1, 2, 0)
             ).astype(int)
 
             # Draw image
             for y in range(self.n_rows):
                 for x in range(self.n_cols):
-                    r, g, b = colors[y, x]
-                    pg.draw.rect(
-                        self.window,
-                        (r, g, b),
-                        (x * cs, y * cs, cs, cs),
-                    )
+                    r, g, b, a = colors[y, x]
+
+                    pixel = pg.Surface((cs, cs))
+                    pixel.set_alpha(a)
+                    pixel.fill((r, g, b))
+                    self.window.blit(pixel, (x * cs, y * cs))
+                    # TODO Do we need to perform alive masking here?
 
             # Draw image border
             pg.draw.rect(
@@ -125,7 +146,10 @@ class Demo:
             # TODO Maybe display target image on sidebar
 
             # Print status
-            self.status_label.set_text(f"fps: {self.clock.get_fps():.2f}  |  step: {frame_count}")
+            self.status_label.set_text(f"step: {frame_count}")
+            self.fps_label.set_text(
+                f"target fps: {self.fps:>2d}  |  current fps: {self.clock.get_fps():>5.2f}"
+            )
 
             self.ui_manager.update(time_delta)
             self.ui_manager.draw_ui(self.window)
