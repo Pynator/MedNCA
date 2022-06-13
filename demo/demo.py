@@ -130,7 +130,7 @@ class Demo:
         )
         self.model_selection = pg_gui.elements.UISelectionList(
             pg.Rect((x_pos_1, 250), (small_width, 28 * 5)),
-            ["Blood 0", "Retina 0"],
+            ["Blood 0", "Retina 0", "Blood 0 Persistence"],
             self.ui_manager,
             default_selection="Blood 0",
         )
@@ -295,9 +295,9 @@ class Demo:
         Returns:
             npt.NDArray[np.int_]: Array of RGBA int values that are necesarry for drawing.
         """
-        self.world = self.model(self.world)
+        self.world = self.model(self.world.to(self.device))
         colors = np.transpose(
-            self.world[0, :4].detach().numpy().clip(0, 1) * 255, (1, 2, 0)
+            self.world[0, :4].detach().cpu().numpy().clip(0, 1) * 255, (1, 2, 0)
         ).astype(int)
         self.frame_count += 1
         return colors
