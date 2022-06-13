@@ -29,7 +29,7 @@ class Demo:
         self.n_rows = 28
 
         torch.no_grad()
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.world = torch.zeros(1, self.n_channels, self.n_cols, self.n_rows).to(self.device)
         # TODO Do we need to disable gradients or caching?
 
@@ -211,7 +211,9 @@ class Demo:
         self.reset()
         self.model = CAModel(n_channels=16, hidden_channels=128, fire_rate=0.5, device=self.device)
         self.model.load_state_dict(
-            torch.load(os.path.join("demo", "trained_models", f"{model}.pt"))
+            torch.load(
+                os.path.join("demo", "trained_models", f"{model}.pt"), map_location=self.device
+            )
         )
 
         img = pg.image.load(os.path.join("demo", "trained_models", f"{model}x5.png"))
