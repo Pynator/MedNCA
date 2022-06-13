@@ -141,18 +141,18 @@ class Demo:
             self.ui_manager,
         )
 
-        self.dummy_label = pg_gui.elements.UILabel(
+        self.pause_label = pg_gui.elements.UILabel(
             pg.Rect((x_pos_1, 410), (medium_width, text_height)),
-            "Dummy text",
+            "Pause and unpause the demo",
             self.ui_manager,
         )
-        self.dummy_button = pg_gui.elements.UIButton(
+        self.pause_button = pg_gui.elements.UIButton(
             pg.Rect((x_pos_1, 440), (medium_width, medium_height)),
-            "Dummy",
+            "Pause",
             self.ui_manager,
         )
 
-        # TODO Add pause button
+        # TODO Change order
         # TODO Maybe add rotation slider
         # TODO Maybe add other variations of the models (other filters or something)
 
@@ -163,6 +163,7 @@ class Demo:
         self.load_model("blood0")
 
         self.running = True
+        self.paused = False
         # Main loop
         while self.running:
             time_delta = self.clock.tick(self.fps) / 1000
@@ -173,7 +174,8 @@ class Demo:
             self.window.blit(self.background, (0, 0))
 
             # Update world
-            colors = self.step()
+            if not self.paused:
+                colors = self.step()
 
             # Draw image
             self.draw_pixels(colors)
@@ -254,6 +256,10 @@ class Demo:
 
                 elif event.ui_element == self.clear_button:
                     self.reset(spawn_seed=False)
+
+                elif event.ui_element == self.pause_button:
+                    self.paused = not self.paused
+                    self.pause_button.set_text("Play" if self.paused else "Pause")
 
             elif event.type == pg_gui.UI_HORIZONTAL_SLIDER_MOVED:
                 if event.ui_element == self.fps_slider:
