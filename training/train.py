@@ -7,6 +7,7 @@ from os.path import isfile, join
 from torchvision import transforms
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 def load_image(mod: str, index: int, path="./images") -> torch.Tensor:
     path = join(path, mod)
@@ -43,9 +44,13 @@ def train_step(
 
 def train(
     model: torch.nn.Module,
-    seed: torch.Tensor,
     epochs: int,
-    device: str
+    device: str,
+    batch_size: int,
+    pool_size: int,
+    mode: str = "naive",
+    med_mnist_mod: str = "BloodMNIST",
+    med_mnist_index: int = 0,
 ) -> torch.nn.Module:
     """
     TODO
@@ -56,18 +61,38 @@ def train(
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=epochs)
 
     loss_fn = torch.nn.MSELoss()
-    target_image = load_image(mod="BloodMNIST", index=0).to(device)
-    seed = seed.to(device)
+
+    # Get target image
+    target_image = load_image(mod=med_mnist_mod, index=med_mnist_index).to(device)
+
+    # Construct initial pool
+    seed = torch.zeros(size=(16, 28, 28), device=device)
+    seed[3:, 14, 14] = 1
+    pool = seed.unsqueeze(0).repeat((pool_size, 1, 1, 1))
+
     for epoch in tqdm(range(epochs)):
 
-        x, loss = train_step(model, seed, target_image, optimizer, loss_fn, device)
+        if mode == "naive":
+            batch = pool[:batch_size]
+        elif mode == "persistence":
+            batch_indices = torch.randperm(pool_size, device=device)[:batch_size]
+            batch = pool[batch_indices]
+            # Prevent catastrophic forgetting: Set 1 batch element to the original seed
+            batch[0] = seed
+        elif mode == "regeneration":
+            raise NotImplementedError()
+
+        x, loss = train_step(model, batch, target_image, optimizer, loss_fn, device)
+
+        if mode == "persistence":
+            pool[batch_indices] = x.detach().clone()
 
         if epoch % 10 == 0:
-            log_and_save(writer, epoch, loss, lr_scheduler, target_image, x, model)
+            log_and_save(writer, epoch, loss, lr_scheduler, target_image, x, model, pool)
 
         lr_scheduler.step()
 
-    log_and_save(writer, epoch, loss, lr_scheduler, target_image, x, model)
+    log_and_save(writer, epoch, loss, lr_scheduler, target_image, x, model, pool)
 
     writer.close()
 
@@ -79,7 +104,8 @@ def log_and_save(
     lr_scheduler: torch.optim.lr_scheduler._LRScheduler,
     target_image: torch.Tensor,
     x: torch.Tensor,
-    model: torch.nn.Module
+    model: torch.nn.Module,
+    pool: torch.Tensor
 ) -> None:
     """
     Handels training loop logging to tensorboard and saves the pytorch model.
@@ -92,6 +118,14 @@ def log_and_save(
     for name, weight in model.named_parameters():
         writer.add_histogram(name, weight, global_step=epoch)
         writer.add_histogram(f"{name}.grad", weight.grad, global_step=epoch)
+    
+    fig, axes = plt.subplots(4, 4)
+    for i, axis in enumerate(axes.flat):
+        if i >= pool.shape[0]:
+            break
+        plt.axis("off")
+        axis.imshow(pool[i, :3].permute((1,2,0)).clip(0, 1).cpu().detach().numpy())
+    writer.add_figure("Pool", figure=fig, global_step=epoch)
 
     writer.flush()
     torch.save(model.state_dict(), join(writer.get_logdir(), "model"))
