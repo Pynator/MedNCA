@@ -5,7 +5,7 @@ from typing import cast
 
 import numpy as np
 import pygame as pg
-import pygame_gui as pg_gui
+import pygame_gui as pgui
 import torch
 from model.model import CAModel
 from numpy import typing as npt
@@ -33,6 +33,9 @@ class Demo:
         self.world = torch.zeros(1, self.n_channels, self.n_cols, self.n_rows).to(self.device)
         # TODO Do we need to disable gradients or caching?
 
+        self.model_name = "blood0"
+        self.model_type = "growing"
+
         self.init_pygame()
         if start:
             self.run()
@@ -48,6 +51,8 @@ class Demo:
         self.fps = 30
         self.clock = pg.time.Clock()
         self.frame_count = 0
+
+        self.angle = 0
 
         self.setup_gui()
 
@@ -86,81 +91,99 @@ class Demo:
         x_pos_1 = self.canvas_width + 50
         x_pos_2 = self.canvas_width + half_sidebar_width + 10
 
-        self.ui_manager = pg_gui.UIManager((self.width, self.height))
+        self.ui_manager = pgui.UIManager((self.width, self.height))
 
-        self.status_label = pg_gui.elements.UILabel(
+        self.status_label = pgui.elements.UILabel(
             pg.Rect((0, self.canvas_height), (self.canvas_width, self.bottombar_height)),
             "",
             self.ui_manager,
         )
 
-        self.control_label = pg_gui.elements.UILabel(
+        self.model_selection_label = pgui.elements.UILabel(
             pg.Rect((x_pos_1, 20), (medium_width, text_height)),
+            "Choose the model and type",
+            self.ui_manager,
+        )
+        self.model_name_selection = pgui.elements.UIDropDownMenu(
+            ["Blood 0", "Retina 0"],
+            "Blood 0",
+            pg.Rect((x_pos_1, 50), (small_width, 35)),
+            self.ui_manager,
+        )
+        self.model_type_selection = pgui.elements.UIDropDownMenu(
+            ["Growing", "Persisting", "Regenerating"],
+            "Growing",
+            pg.Rect((x_pos_1, 120), (small_width, 35)),
+            self.ui_manager,
+        )
+
+        img = pg.image.load(os.path.join("demo", "trained_models", "blood0x5.png"))
+        self.model_target_image = pgui.elements.UIImage(
+            pg.Rect((x_pos_2, 50), (28 * 5, 28 * 5)),
+            img,
+            self.ui_manager,
+        )
+
+        self.control_label = pgui.elements.UILabel(
+            pg.Rect((x_pos_1, 210), (medium_width, text_height)),
             "Reset or clear the canvas",
             self.ui_manager,
         )
-        self.reset_button = pg_gui.elements.UIButton(
-            pg.Rect((x_pos_1, 50), (small_width, medium_height)),
+        self.reset_button = pgui.elements.UIButton(
+            pg.Rect((x_pos_1, 240), (small_width, medium_height)),
             "Reset",
             self.ui_manager,
         )
-        self.clear_button = pg_gui.elements.UIButton(
-            pg.Rect((x_pos_2, 50), (small_width, medium_height)),
+        self.clear_button = pgui.elements.UIButton(
+            pg.Rect((x_pos_2, 240), (small_width, medium_height)),
             "Clear",
             self.ui_manager,
         )
 
-        self.fps_label = pg_gui.elements.UILabel(
-            pg.Rect((x_pos_1, 120), (medium_width, text_height)),
-            "Target fps: ...  |  Current fps: ...",
+        self.pause_label = pgui.elements.UILabel(
+            pg.Rect((x_pos_1, 310), (medium_width, text_height)),
+            "Pause and unpause the demo",
             self.ui_manager,
         )
-        self.fps_slider = pg_gui.elements.UIHorizontalSlider(
-            pg.Rect((x_pos_1, 150), (medium_width, medium_height)),
+        self.pause_button = pgui.elements.UIButton(
+            pg.Rect((x_pos_1, 340), (medium_width, medium_height)),
+            "Pause",
+            self.ui_manager,
+        )
+
+        self.fps_label = pgui.elements.UILabel(
+            pg.Rect((x_pos_1, 410), (small_width, text_height)),
+            f"FPS: {self.fps}",
+            self.ui_manager,
+        )
+        self.fps_slider = pgui.elements.UIHorizontalSlider(
+            pg.Rect((x_pos_1, 440), (small_width, medium_height)),
             30,
             (5, 60),
             self.ui_manager,
             click_increment=5,
         )
 
-        self.model_selection_label = pg_gui.elements.UILabel(
-            pg.Rect((x_pos_1, 220), (medium_width, text_height)),
-            "Choose the model",
+        self.angle_label = pgui.elements.UILabel(
+            pg.Rect((x_pos_2, 410), (small_width, text_height)),
+            f"Angle: {self.angle}°",
             self.ui_manager,
         )
-        self.model_selection = pg_gui.elements.UISelectionList(
-            pg.Rect((x_pos_1, 250), (small_width, 28 * 5)),
-            ["Blood 0", "Retina 0", "Blood 0 Persistence"],
+        self.angle_slider = pgui.elements.UIHorizontalSlider(
+            pg.Rect((x_pos_2, 440), (small_width, medium_height)),
+            0,
+            (0, 360),
             self.ui_manager,
-            default_selection="Blood 0",
-        )
-        img = pg.image.load(os.path.join("demo", "trained_models", "blood0x5.png"))
-        self.model_target_image = pg_gui.elements.UIImage(
-            pg.Rect((x_pos_2, 250), (28 * 5, 28 * 5)),
-            img,
-            self.ui_manager,
+            click_increment=30,
         )
 
-        self.pause_label = pg_gui.elements.UILabel(
-            pg.Rect((x_pos_1, 410), (medium_width, text_height)),
-            "Pause and unpause the demo",
-            self.ui_manager,
-        )
-        self.pause_button = pg_gui.elements.UIButton(
-            pg.Rect((x_pos_1, 440), (medium_width, medium_height)),
-            "Pause",
-            self.ui_manager,
-        )
-
-        # TODO Change order
-        # TODO Maybe add rotation slider
         # TODO Maybe add other variations of the models (other filters or something)
 
     def run(self) -> None:
         """
         Starts the demo and processes the pygame loop.
         """
-        self.load_model("blood0")
+        self.load_model()
 
         self.running = True
         self.paused = False
@@ -187,12 +210,10 @@ class Demo:
                 (0, 0, self.canvas_width, self.canvas_height),
                 width=2,
             )
-            # TODO Maybe display target image on sidebar
 
             # Print status
-            self.status_label.set_text(f"step: {self.frame_count}")
-            self.fps_label.set_text(
-                f"Target fps: {self.fps:>2d}  |  Current fps: {self.clock.get_fps():>5.2f}"
+            self.status_label.set_text(
+                f"FPS: {self.clock.get_fps():>5.2f}  |  step: {self.frame_count}"
             )
 
             self.ui_manager.update(time_delta)
@@ -201,7 +222,7 @@ class Demo:
             # Draw everthing to screen
             pg.display.flip()
 
-    def load_model(self, model: str) -> None:
+    def load_model(self) -> None:
         """
         Loads a trained model, spawns a seed and updates the target image in the GUI.
 
@@ -212,11 +233,12 @@ class Demo:
         self.model = CAModel(n_channels=16, hidden_channels=128, fire_rate=0.5, device=self.device)
         self.model.load_state_dict(
             torch.load(
-                os.path.join("demo", "trained_models", f"{model}.pt"), map_location=self.device
+                os.path.join("demo", "trained_models", f"{self.model_name}_{self.model_type}.pt"),
+                map_location=self.device,
             )
         )
 
-        img = pg.image.load(os.path.join("demo", "trained_models", f"{model}x5.png"))
+        img = pg.image.load(os.path.join("demo", "trained_models", f"{self.model_name}x5.png"))
         self.model_target_image.set_image(img)
 
     def reset(self, spawn_seed: bool = True) -> None:
@@ -252,7 +274,7 @@ class Demo:
                         math.floor(x_pos / self.cell_size),
                     ] = 1
 
-            elif event.type == pg_gui.UI_BUTTON_PRESSED:
+            elif event.type == pgui.UI_BUTTON_PRESSED:
                 if event.ui_element == self.reset_button:
                     self.reset()
 
@@ -263,17 +285,27 @@ class Demo:
                     self.paused = not self.paused
                     self.pause_button.set_text("Play" if self.paused else "Pause")
 
-            elif event.type == pg_gui.UI_HORIZONTAL_SLIDER_MOVED:
+            elif event.type == pgui.UI_HORIZONTAL_SLIDER_MOVED:
                 if event.ui_element == self.fps_slider:
                     self.fps = cast(int, self.fps_slider.get_current_value())
+                    self.fps_label.set_text(f"FPS: {self.fps:>2d}")
 
-            elif event.type == pg_gui.UI_SELECTION_LIST_NEW_SELECTION:
-                if event.ui_element == self.model_selection:
-                    self.load_model(
-                        cast(str, self.model_selection.get_single_selection())
-                        .replace(" ", "")
-                        .lower()
-                    )
+                elif event.ui_element == self.angle_slider:
+                    self.angle = self.angle_slider.get_current_value()
+                    self.angle_label.set_text(f"Angle: {self.angle:>3.0f}°")
+
+            elif event.type == pgui.UI_DROP_DOWN_MENU_CHANGED:
+                if event.ui_element == self.model_name_selection:
+                    self.model_name = self.model_name_selection.selected_option.replace(
+                        " ", ""
+                    ).lower()
+                    self.load_model()
+
+                elif event.ui_element == self.model_type_selection:
+                    self.model_type = self.model_type_selection.selected_option.replace(
+                        " ", ""
+                    ).lower()
+                    self.load_model()
 
             self.ui_manager.process_events(event)
 
@@ -303,10 +335,11 @@ class Demo:
         Returns:
             npt.NDArray[np.int_]: Array of RGBA int values that are necesarry for drawing.
         """
-        self.world = self.model(self.world.to(self.device))
+        self.world = self.model(self.world.to(self.device), angle=np.deg2rad(self.angle))
         colors = np.transpose(
             self.world[0, :4].detach().cpu().numpy().clip(0, 1) * 255, (1, 2, 0)
         ).astype(int)
+
         self.frame_count += 1
         return colors
 
