@@ -9,6 +9,7 @@ import pygame_gui as pgui
 import torch
 from model.model import CAModel
 from numpy import typing as npt
+import demo.demo_utils as dutils
 
 
 class Demo:
@@ -33,8 +34,11 @@ class Demo:
         self.world = torch.zeros(1, self.n_channels, self.n_cols, self.n_rows).to(self.device)
         # TODO Do we need to disable gradients or caching?
 
-        self.model_name = "blood0"
-        self.model_type = "growing"
+        self.models = dutils.createModels()
+        self.model_name = self.models[0].name.lower()
+        self.model_type = self.models[0].modeltypes[0].lower()
+
+        self.isOkay = False
 
         self.init_pygame()
         if start:
@@ -104,15 +108,22 @@ class Demo:
             "Choose the model and type",
             self.ui_manager,
         )
+
+
+        models = self.models
+        model_names = dutils.getModelNames(models)
         self.model_name_selection = pgui.elements.UIDropDownMenu(
-            ["Blood 0", "Retina 0"],
-            "Blood 0",
+            model_names,
+            model_names[0],
             pg.Rect((x_pos_1, 50), (small_width, 35)),
             self.ui_manager,
         )
+
+        #TODO: potentially refactor to be not ugly
+        self.model_type_pos = [(x_pos_1, 120), (small_width, 35)]
         self.model_type_selection = pgui.elements.UIDropDownMenu(
-            ["Growing", "Persisting", "Regenerating"],
-            "Growing",
+            models[0].modeltypes,
+            models[0].modeltypes[0],
             pg.Rect((x_pos_1, 120), (small_width, 35)),
             self.ui_manager,
         )
@@ -260,6 +271,7 @@ class Demo:
         Handling of all pygame events since last call. This includes closing the window, mouse
         presses (left or right button) and GUI interactions.
         """
+
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 pg.quit()
@@ -297,17 +309,34 @@ class Demo:
 
             elif event.type == pgui.UI_DROP_DOWN_MENU_CHANGED:
                 if event.ui_element == self.model_name_selection:
+                    remove_id = id(self.model_type_selection)
+                    for elem in self.ui_manager.get_root_container().elements:
+                        curr_id = id(elem) 
+                        if remove_id == curr_id:
+                            self.ui_manager.get_root_container().remove_element(elem)
+                            print("REMOVED")
                     self.model_name = self.model_name_selection.selected_option.replace(
                         " ", ""
                     ).lower()
+                    model = dutils.findModel(self.model_name, self.models)
+                    self.model_type_selection = pgui.elements.UIDropDownMenu(
+                        model.modeltypes,
+                        model.modeltypes[0],
+                        pg.Rect(self.model_type_pos[0], self.model_type_pos[1]),
+                        self.ui_manager,
+                        )
+                    self.model_type = model.modeltypes[0].lower()
+                    if model is None:
+                        raise ValueError("Not found")
                     self.load_model()
-
+                    
                 elif event.ui_element == self.model_type_selection:
                     self.model_type = self.model_type_selection.selected_option.replace(
                         " ", ""
                     ).lower()
                     self.load_model()
 
+                
             self.ui_manager.process_events(event)
 
         if pg.mouse.get_pressed()[2]:
