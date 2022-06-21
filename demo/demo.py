@@ -309,12 +309,14 @@ class Demo:
 
             elif event.type == pgui.UI_DROP_DOWN_MENU_CHANGED:
                 if event.ui_element == self.model_name_selection:
-                    remove_id = id(self.model_type_selection)
-                    for elem in self.ui_manager.get_root_container().elements:
-                        curr_id = id(elem) 
-                        if remove_id == curr_id:
-                            self.ui_manager.get_root_container().remove_element(elem)
-                            print("REMOVED")
+                    #remove_id = id(self.model_type_selection)
+                    #for elem in self.ui_manager.get_root_container().elements:
+                    #    curr_id = id(elem) 
+                    #    if remove_id == curr_id:
+                    #        self.ui_manager.get_root_container().remove_element(elem)
+                    #        print("REMOVED")
+                    self.model_type_selection.kill()
+                    
                     self.model_name = self.model_name_selection.selected_option.replace(
                         " ", ""
                     ).lower()
