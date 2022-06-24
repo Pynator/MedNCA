@@ -213,6 +213,16 @@ class Demo:
 
             # Draw image
             self.draw_pixels(colors)
+
+            # Print status
+            self.status_label.set_text(
+                f"FPS: {self.clock.get_fps():>5.2f}  |  step: {self.frame_count}"
+            )
+
+            # Update GUI
+            self.ui_manager.update(time_delta)
+            self.ui_manager.draw_ui(self.window)
+
             # Draw image border
             pg.draw.rect(
                 self.window,
@@ -220,14 +230,8 @@ class Demo:
                 (0, 0, self.canvas_width, self.canvas_height),
                 width=2,
             )
+            pg.draw.rect(self.window, (200, 200, 200), (770, 50, 140, 140), width=1)
 
-            # Print status
-            self.status_label.set_text(
-                f"FPS: {self.clock.get_fps():>5.2f}  |  step: {self.frame_count}"
-            )
-
-            self.ui_manager.update(time_delta)
-            self.ui_manager.draw_ui(self.window)
             # Draw everthing to screen
             pg.display.flip()
 
@@ -249,9 +253,6 @@ class Demo:
         self.model.eval()
         img = pg.image.load(os.path.join("demo", "trained_models", f"{self.model_name}x5.png"))
         self.model_target_image.set_image(img)
-
-
-
 
     def reset(self, spawn_seed: bool = True) -> None:
         """
