@@ -80,11 +80,22 @@ def train(
             # Prevent catastrophic forgetting: Set 1 batch element to the original seed
             batch[0] = seed
         elif mode == "regeneration":
-            raise NotImplementedError()
+            batch_indices = torch.randperm(pool_size, device=device)[:batch_size]
+            batch = pool[batch_indices]
+            if epoch > 0:
+                coord, coord_indices = torch.randint(7, 21, (int(batch_size / 4), 2, 2), device=device).sort()
+                for i in range(int(batch_size / 4)):
+                    batch[
+                        i,
+                        :,
+                        coord[i, 0, 0]:coord[i, 0, 1],
+                        coord[i, 1, 0]:coord[i, 1, 1]
+                    ] = 0
+            batch[0] = seed
 
         x, loss = train_step(model, batch, target_image, optimizer, loss_fn, device)
 
-        if mode == "persistence":
+        if mode == "persistence" or mode == "regeneration":
             pool[batch_indices] = x.detach().clone()
 
         if epoch % 10 == 0:

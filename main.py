@@ -9,4 +9,4 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     model = CAModel(n_channels=16, hidden_channels=128, fire_rate=.5, device=device)
-    train(model=model, epochs=5000, batch_size=BATCH_SIZE, pool_size=POOL_SIZE, device=device, mode="persistence")
+    train(model=model, epochs=10000, batch_size=BATCH_SIZE, pool_size=POOL_SIZE, device=device, mode="regeneration")
