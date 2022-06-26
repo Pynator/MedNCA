@@ -1,3 +1,4 @@
+from typing import Tuple
 import torch
 import torch.nn as nn
 
@@ -11,13 +12,14 @@ def get_living_mask(x):
 
 class CAModel(nn.Module):
 
-    def __init__(self, n_channels, hidden_channels, fire_rate, device=None):
+    def __init__(self, n_channels, hidden_channels, fire_rate, device=None, filter_type='sobel'):
         super().__init__()
 
         self.n_channels = n_channels
         self.hidden_channels = hidden_channels
         self.fire_rate = fire_rate
         self.device = device or torch.device("cpu")
+        self.filter_type = filter_type
 
         self.dmodel = torch.nn.Sequential(
             nn.Conv2d(3*n_channels, hidden_channels, kernel_size=1),
@@ -41,26 +43,12 @@ class CAModel(nn.Module):
             dtype=torch.float32,
         )
 
-        # sobel filter in x dimension
-        dx = torch.tensor(
-            [
-                [-1, 0, 1],
-                [-2, 0, 2],
-                [-1, 0, 1]
-            ]
-        )
-
-        # scale the filter
-        scalar = 8.0
-        dx = dx / scalar
-
-        # sobel filter in y dimension
-        dy = dx.t()
+        filter1, filter2 = self.get_filters()
 
         c, s = np.cos(angle), np.sin(angle)
 
         kernel = torch.stack(
-            [identify, c * dx - s*dy, s*dx + c*dy]
+            [identify, c * filter1 - s*filter2, s*filter1 + c*filter2]
         ) # (3, 3, 3)
 
         kernel = kernel.repeat((self.n_channels, 1, 1)) # (3 * n_channels, 3, 3)
@@ -91,6 +79,79 @@ class CAModel(nn.Module):
         life_mask = (pre_life_mask & post_life_mask).to(torch.float32)
 
         return x * life_mask
+
+    def get_filters(self) -> Tuple[torch.Tensor, torch.Tensor]:
+        if self.filter_type == 'sobel':
+            # Sobel filters measuring the x and y gradient
+            factor = 1 / 8
+            dx = torch.tensor(
+                [
+                    [-1, 0, 1],
+                    [-2, 0, 2],
+                    [-1, 0, 1]
+                ]
+            )
+            dx = dx * factor
+
+            dy = torch.tensor(
+                [
+                    [-1,-2,-1],
+                    [ 0, 0, 0],
+                    [ 1, 2, 1]
+                ]
+            )
+            dy = dy * factor
+
+            return dx, dy
+
+        if self.filter_type == 'gauss_and_laplace':
+            # Discrete gaussian (low-pass) and laplacian (high-pass) filters
+            factor = 1 / 16
+            gauss = torch.tensor(
+                [
+                    [1, 2, 1],
+                    [2, 4, 2],
+                    [1, 2, 1]
+                ]
+            )
+            gauss = gauss * factor
+
+            factor = 1
+            laplace = torch.tensor(
+                [
+                    [0, 1, 0],
+                    [1,-4, 1],
+                    [0, 1, 0]
+                ]
+            )
+            laplace = laplace * factor
+
+            return gauss, laplace
+
+        if self.filter_type == 'fixed_random':
+            # Numbers from -1 to 1 in random (but fixed) order
+            factor = 1 / 4
+            rnd1 = torch.tensor(
+                [
+                    [ 3, 2,-1],
+                    [-3, 0, 4],
+                    [ 1,-2,-4]
+                ]
+            )
+            rnd1 = rnd1 * factor
+
+            rnd2 = torch.tensor(
+                [
+                    [ 1,-4, 0],
+                    [-2,-1, 3],
+                    [ 2, 4,-3]
+                ]
+            )
+            rnd2 = rnd2 * factor
+
+            return rnd1, rnd2
+
+        raise ValueError("Invalid filter_type!")
 
 
 if __name__ == "__main__":
