@@ -3,9 +3,12 @@ from typing import List
 
 
 class TrainedModel:
+    # Order of entries in the drop-down menu
+    ORDER = {"regenerating": 0, "persisting": 1, "growing": 2}
+
     def __init__(self, name: str, modeltypes: List[str]) -> None:
         self.name = name
-        self.modeltypes = modeltypes
+        self.modeltypes = sorted(modeltypes, key=lambda type: TrainedModel.ORDER[type])
         for i in range(len(self.modeltypes)):
             self.modeltypes[i] = self.modeltypes[i].capitalize()
 
@@ -26,6 +29,7 @@ def get_model_names(model_objects: List[TrainedModel]) -> List[str]:
     names = []
     for model in model_objects:
         names.append(model.name.capitalize())
+
     return names
 
 
