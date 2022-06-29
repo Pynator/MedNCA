@@ -45,7 +45,7 @@ def train_step(
 def train(
     model: torch.nn.Module,
     epochs: int,
-    device: str,
+    device: torch.device,
     batch_size: int,
     pool_size: int,
     mode: str = "naive",
