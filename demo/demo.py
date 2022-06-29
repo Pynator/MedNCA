@@ -9,6 +9,7 @@ import pygame_gui as pgui
 import torch
 from model.model import CAModel
 from numpy import typing as npt
+
 import demo.demo_utils as dutils
 
 
@@ -34,7 +35,7 @@ class Demo:
         self.world = torch.zeros(1, self.n_channels, self.n_cols, self.n_rows).to(self.device)
         # TODO Do we need to disable gradients or caching?
 
-        self.models = dutils.createModels()
+        self.models = dutils.create_models()
         self.model_name = self.models[0].name.lower()
         self.model_type = self.models[0].modeltypes[0].lower()
 
@@ -109,17 +110,13 @@ class Demo:
             self.ui_manager,
         )
 
-
         models = self.models
-        model_names = dutils.getModelNames(models)
+        model_names = dutils.get_model_names(models)
         self.model_name_selection = pgui.elements.UIDropDownMenu(
-            model_names,
-            model_names[0],
-            pg.Rect((x_pos_1, 50), (small_width, 35)),
-            self.ui_manager,
+            model_names, model_names[0], pg.Rect((x_pos_1, 50), (small_width, 35)), self.ui_manager,
         )
 
-        #TODO: potentially refactor to be not ugly
+        # TODO: potentially refactor to be not ugly
         self.model_type_pos = [(x_pos_1, 120), (small_width, 35)]
         self.model_type_selection = pgui.elements.UIDropDownMenu(
             models[0].modeltypes,
@@ -130,9 +127,7 @@ class Demo:
 
         img = pg.image.load(os.path.join("demo", "trained_models", "blood0x5.png"))
         self.model_target_image = pgui.elements.UIImage(
-            pg.Rect((x_pos_2, 50), (28 * 5, 28 * 5)),
-            img,
-            self.ui_manager,
+            pg.Rect((x_pos_2, 50), (28 * 5, 28 * 5)), img, self.ui_manager,
         )
 
         self.control_label = pgui.elements.UILabel(
@@ -141,14 +136,10 @@ class Demo:
             self.ui_manager,
         )
         self.reset_button = pgui.elements.UIButton(
-            pg.Rect((x_pos_1, 240), (small_width, medium_height)),
-            "Reset",
-            self.ui_manager,
+            pg.Rect((x_pos_1, 240), (small_width, medium_height)), "Reset", self.ui_manager,
         )
         self.clear_button = pgui.elements.UIButton(
-            pg.Rect((x_pos_2, 240), (small_width, medium_height)),
-            "Clear",
-            self.ui_manager,
+            pg.Rect((x_pos_2, 240), (small_width, medium_height)), "Clear", self.ui_manager,
         )
 
         self.pause_label = pgui.elements.UILabel(
@@ -157,9 +148,7 @@ class Demo:
             self.ui_manager,
         )
         self.pause_button = pgui.elements.UIButton(
-            pg.Rect((x_pos_1, 340), (medium_width, medium_height)),
-            "Pause",
-            self.ui_manager,
+            pg.Rect((x_pos_1, 340), (medium_width, medium_height)), "Pause", self.ui_manager,
         )
 
         self.fps_label = pgui.elements.UILabel(
@@ -198,6 +187,10 @@ class Demo:
 
         self.running = True
         self.paused = False
+
+        # Make sure, this array is initialized
+        colors = np.zeros((self.n_rows, self.n_cols, 4), dtype=int)
+
         # Main loop
         while self.running:
             time_delta = self.clock.tick(self.fps) / 1000
@@ -310,36 +303,28 @@ class Demo:
 
             elif event.type == pgui.UI_DROP_DOWN_MENU_CHANGED:
                 if event.ui_element == self.model_name_selection:
-                    #remove_id = id(self.model_type_selection)
-                    #for elem in self.ui_manager.get_root_container().elements:
-                    #    curr_id = id(elem) 
-                    #    if remove_id == curr_id:
-                    #        self.ui_manager.get_root_container().remove_element(elem)
-                    #        print("REMOVED")
                     self.model_type_selection.kill()
-                    
+
                     self.model_name = self.model_name_selection.selected_option.replace(
                         " ", ""
                     ).lower()
-                    model = dutils.findModel(self.model_name, self.models)
+                    model = dutils.find_model(self.model_name, self.models)
                     self.model_type_selection = pgui.elements.UIDropDownMenu(
                         model.modeltypes,
                         model.modeltypes[0],
                         pg.Rect(self.model_type_pos[0], self.model_type_pos[1]),
                         self.ui_manager,
-                        )
+                    )
                     self.model_type = model.modeltypes[0].lower()
-                    if model is None:
-                        raise ValueError("Not found")
+
                     self.load_model()
-                    
+
                 elif event.ui_element == self.model_type_selection:
                     self.model_type = self.model_type_selection.selected_option.replace(
                         " ", ""
                     ).lower()
                     self.load_model()
 
-                
             self.ui_manager.process_events(event)
 
         if pg.mouse.get_pressed()[2]:
@@ -370,9 +355,9 @@ class Demo:
         """
         with torch.no_grad():
             self.world = self.model(self.world.to(self.device), angle=np.deg2rad(self.angle))
-        colors = np.transpose(
-            self.world[0, :4].cpu().numpy().clip(0, 1) * 255, (1, 2, 0)
-        ).astype(int)
+        colors = np.transpose(self.world[0, :4].cpu().numpy().clip(0, 1) * 255, (1, 2, 0)).astype(
+            int
+        )
         self.frame_count += 1
         return colors
 
