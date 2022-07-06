@@ -48,15 +48,14 @@ def train(
     device: torch.device,
     batch_size: int,
     pool_size: int,
-    mode: str = "naive",
+    writer: SummaryWriter,
+    mode: str = "growing",
     med_mnist_mod: str = "BloodMNIST",
     med_mnist_index: int = 0,
 ) -> torch.nn.Module:
     """
     TODO
     """
-    writer = SummaryWriter()
-
     optimizer = torch.optim.Adam(params=model.parameters())
     lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer, T_max=epochs)
 
@@ -72,7 +71,7 @@ def train(
 
     for epoch in tqdm(range(epochs)):
 
-        if mode == "naive":
+        if mode == "growing":
             batch = pool[:batch_size]
         elif mode == "persistence":
             batch_indices = torch.randperm(pool_size, device=device)[:batch_size]

@@ -1,6 +1,7 @@
 import torch
 from model.model import CAModel
 from training.train import train
+from torch.utils.tensorboard import SummaryWriter
 
 
 if __name__ == "__main__":
@@ -12,11 +13,14 @@ if __name__ == "__main__":
     POOL_SIZE = 1024
     MODE = "regeneration"
 
+    writer = SummaryWriter()
+
     train(
         model=model,
         epochs=EPOCHS,
         batch_size=BATCH_SIZE,
         pool_size=POOL_SIZE,
         device=device,
-        mode="regeneration",
+        mode=MODE,
+        writer=writer
     )
