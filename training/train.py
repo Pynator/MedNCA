@@ -34,7 +34,13 @@ def train_step(
     iter = np.random.randint(64, 96)
     for i in range(iter):
         x = model(x)
-    loss = loss_fn(x[:, :4], torch.concat([target_image, torch.ones(size=(1, 28, 28)).to(device=device)], dim=0))
+    loss = loss_fn(
+        x[:, :4],
+        torch.concat([
+            target_image,
+            torch.ones(size=(1, 28, 28)).to(device=device)
+        ], dim=0).unsqueeze(dim=0).repeat(x.size()[0], 1, 1, 1)
+    )
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
@@ -98,7 +104,7 @@ def train(
             pool[batch_indices] = x.detach().clone()
 
         if epoch % 10 == 0:
-            log_and_save(writer, epoch, loss, lr_scheduler, target_image, x, model, pool)
+            log_and_save(writer, epoch, loss, lr_scheduler, target_image, x, model)
 
         lr_scheduler.step()
 
@@ -115,7 +121,7 @@ def log_and_save(
     target_image: torch.Tensor,
     x: torch.Tensor,
     model: torch.nn.Module,
-    pool: torch.Tensor
+    pool: torch.Tensor = None
 ) -> None:
     """
     Handels training loop logging to tensorboard and saves the pytorch model.
@@ -129,13 +135,14 @@ def log_and_save(
         writer.add_histogram(name, weight, global_step=epoch)
         writer.add_histogram(f"{name}.grad", weight.grad, global_step=epoch)
     
-    fig, axes = plt.subplots(4, 4)
-    for i, axis in enumerate(axes.flat):
-        if i >= pool.shape[0]:
-            break
-        plt.axis("off")
-        axis.imshow(pool[i, :3].permute((1,2,0)).clip(0, 1).cpu().detach().numpy())
-    writer.add_figure("Pool", figure=fig, global_step=epoch)
+    if pool is not None:
+        fig, axes = plt.subplots(4, 4)
+        for i, axis in enumerate(axes.flat):
+            if i >= pool.shape[0]:
+                break
+            plt.axis("off")
+            axis.imshow(pool[i, :3].permute((1,2,0)).clip(0, 1).cpu().detach().numpy())
+        writer.add_figure("Pool", figure=fig, global_step=epoch)
 
     writer.flush()
     torch.save(model.state_dict(), join(writer.get_logdir(), "model"))
