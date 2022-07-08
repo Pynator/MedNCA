@@ -29,6 +29,7 @@ if __name__ == "__main__":
             epochs=config["epochs"],
             batch_size=config["batch_size"],
             pool_size=config["pool_size"],
+            n_channels=config["n_channels"],
             mode=config["training_mode"],
             med_mnist_mod=config["dataset"],
             med_mnist_index=config["image_index"],

@@ -54,6 +54,7 @@ def train(
     device: torch.device,
     batch_size: int,
     pool_size: int,
+    n_channels: int,
     writer: SummaryWriter,
     mode: str = "growing",
     med_mnist_mod: str = "BloodMNIST",
@@ -71,7 +72,7 @@ def train(
     target_image = load_image(mod=med_mnist_mod, index=med_mnist_index).to(device)
 
     # Construct initial pool
-    seed = torch.zeros(size=(16, 28, 28), device=device)
+    seed = torch.zeros(size=(n_channels, 28, 28), device=device)
     seed[3:, 14, 14] = 1
     pool = seed.unsqueeze(0).repeat((pool_size, 1, 1, 1))
 
