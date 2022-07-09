@@ -1,0 +1,11 @@
+# This file was constructed from memory
+training_mode: growing
+filter: sobel
+dataset: RetinaMNIST
+image_index: 0
+epochs: 5000
+batch_size: 1
+pool_size: None
+n_channels: 16
+hidden_channels: 128
+fire_rate: 0.5
