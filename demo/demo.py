@@ -236,7 +236,20 @@ class Demo:
             model (str): Name of the trained model, e.g. 'blood0'.
         """
         self.reset()
-        self.model = CAModel(n_channels=16, hidden_channels=128, fire_rate=0.5, device=self.device)
+
+        filter_type = "sobel"
+        if self.model_type == "gauss-laplace":
+            filter_type = "gauss_and_laplace"
+        elif self.model_type == "fixed-random":
+            filter_type = "fixed_random"
+
+        self.model = CAModel(
+            n_channels=16,
+            hidden_channels=128,
+            fire_rate=0.5,
+            device=self.device,
+            filter_type=filter_type,
+        )
         self.model.load_state_dict(
             torch.load(
                 os.path.join("demo", "trained_models", f"{self.model_name}_{self.model_type}.pt"),

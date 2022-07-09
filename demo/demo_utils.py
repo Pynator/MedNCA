@@ -4,7 +4,12 @@ from typing import List
 
 class TrainedModel:
     # Order of entries in the drop-down menu
-    ORDER = {"regenerating": 0, "persisting": 1, "growing": 2}
+    ORDER = {
+        key: val
+        for val, key in enumerate(
+            ["regenerating", "persisting", "growing", "gauss-laplace", "fixed-random"]
+        )
+    }
 
     def __init__(self, name: str, modeltypes: List[str]) -> None:
         self.name = name
@@ -36,7 +41,7 @@ def get_model_names(model_objects: List[TrainedModel]) -> List[str]:
 def create_models() -> List[TrainedModel]:
     model_path = os.path.join(os.getcwd(), "demo", "trained_models")
 
-    files = os.listdir(model_path)
+    files = sorted(os.listdir(model_path))
 
     models = []
     model_to_types = dict()
