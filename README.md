@@ -3,8 +3,8 @@ PyTorch implementation of a Neural Cellular Automaton as proposed by the Paper [
 
 This project was done as part of the lecture Deep Generative Models at [TU Darmstadt](https://www.tu-darmstadt.de/index.en.jsp).
 
-| ![GIF 1](demo/frames/videos/mednca_blood0_800steps.gif) | ![GIF 2](demo/frames/videos/mednca_blood0_regeneration.gif) | ![GIF 3](demo/frames/videos/mednca_retina0_200steps.gif) | ![GIF 4](demo/frames/videos/mednca_retina0_regeneration.gif) |
-| ------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+| <img src="demo/frames/videos/mednca_blood0_800steps.gif" alt="GIF 1" width="140" height="140" /> | <img src="demo/frames/videos/mednca_blood0_regeneration.gif" alt="GIF 2" width="140" height="140" /> | <img src="demo/frames/videos/mednca_retina0_200steps.gif" alt="GIF 3" width="140" height="140" /> | <img src="demo/frames/videos/mednca_retina0_regeneration.gif" alt="GIF 4" width="140" height="140" /> |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 
 ## Dependencies
 
