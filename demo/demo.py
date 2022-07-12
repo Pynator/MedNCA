@@ -7,6 +7,7 @@ import numpy as np
 import pygame as pg
 import pygame_gui as pgui
 import torch
+import torchvision
 from model.model import CAModel
 from numpy import typing as npt
 
@@ -18,7 +19,7 @@ class Demo:
     Interactive demonstration of the trained neural cellular automata.
     """
 
-    def __init__(self, start: bool = True) -> None:
+    def __init__(self, start: bool = True, safe_frames: bool = True) -> None:
         """
         Constructor.
 
@@ -26,6 +27,8 @@ class Demo:
             start (bool, optional): If True, the demo starts automatically. Otherwise run() has to
             be called to start the demo. Defaults to True.
         """
+        self.safe_frames = safe_frames
+
         self.n_channels = 16
         self.n_cols = 28
         self.n_rows = 28
@@ -203,6 +206,11 @@ class Demo:
             # Update world
             if not self.paused:
                 colors = self.step()
+
+                if self.safe_frames:
+                    torchvision.utils.save_image(
+                        self.world[0, :4], f"demo/frames/{self.frame_count}.png"
+                    )
 
             # Draw image
             self.draw_pixels(colors)

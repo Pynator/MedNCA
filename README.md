@@ -3,15 +3,18 @@ PyTorch implementation of a Neural Cellular Automaton as proposed by the Paper [
 
 This project was done as part of the lecture Deep Generative Models at [TU Darmstadt](https://www.tu-darmstadt.de/index.en.jsp).
 
+| ![GIF 1](demo/frames/videos/mednca_blood0_800steps.gif) | ![GIF 2](demo/frames/videos/mednca_blood0_regeneration.gif) | ![GIF 3](demo/frames/videos/mednca_retina0_200steps.gif) | ![GIF 4](demo/frames/videos/mednca_retina0_regeneration.gif) |
+| ------------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------ |
+
 ## Dependencies
 
 See `requirements.txt`.
 
 ## Usage
 
-Run `main.py` to start the interactive demonstration.
+Run `main.py` to start the interactive demonstration (no GPU required).
 
-Edit and run `start_training.py` to train a new model.
+Edit and run `schedule_training.py` or `start_training.py` to train a new model (GPU recommended).
 
 ## Contributors
 

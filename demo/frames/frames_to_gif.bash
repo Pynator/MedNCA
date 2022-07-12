@@ -1,0 +1,1 @@
+ffmpeg -r 60 -i "./%d.png" -y "./video.gif" -filter_complex scale=iw*20:ih*20:flags=neighbor
