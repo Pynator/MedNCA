@@ -1,4 +1,7 @@
 # MedNCA
+
+![license badge](https://img.shields.io/github/license/Pynator/MedNCA?style=flat-square) ![repo size badge](https://img.shields.io/github/repo-size/Pynator/MedNCA?style=flat-square) ![files badge](https://img.shields.io/github/directory-file-count/Pynator/MedNCA?style=flat-square) ![total lines badge](https://img.shields.io/tokei/lines/github.com/Pynator/MedNCA?style=flat-square)
+
 PyTorch implementation of a Neural Cellular Automaton as proposed by the paper ["Growing Neural Cellular Automata"](https://distill.pub/2020/growing-ca/), trained on medical images from [MedMNIST](https://medmnist.com/) and visualized using Pygame.
 
 This project was done as part of the lecture Deep Generative Models at [TU Darmstadt](https://www.tu-darmstadt.de/index.en.jsp).
